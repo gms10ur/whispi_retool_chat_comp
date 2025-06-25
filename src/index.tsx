@@ -2,6 +2,53 @@ import React, { useState, useEffect, useRef } from 'react'
 import { type FC } from 'react'
 import { Retool } from '@tryretool/custom-component-support'
 
+// Color Palette - Light Mode (3 temel renk: beyaz, siyah, pembe)
+const colorPalette = {
+  // Temel renkler
+  white: '#ffffff',
+  black: '#000000',
+  pink: '#e50253',
+
+  // Kullanım kolaylığı için alias'lar
+  primary: '#e50253',
+  primaryLight: 'rgba(229, 2, 83, 0.1)',
+
+  // Metinler (light mode - siyah yazılar)
+  text: '#000000',
+  textSecondary: '#666666',
+  textLight: '#ffffff', // Primary üzerindeki yazılar için beyaz kalır
+
+  // Arkaplanlar (light mode - beyaz arkaplanlar)
+  background: '#ffffff',
+
+  // Borderlar (light mode - daha açık gri borderlar)
+  border: '#e0e0e0',
+  borderLight: '#f0f0f0',
+  borderMedium: '#d0d0d0',
+  borderDark: '#e0e0e0',
+
+  // Mesaj kutuları
+  message: {
+    user: '#e50253', // User mesajı pembe kalır
+    assistant: '#f5f5f5' // Assistant mesajı açık gri
+  },
+
+  // Durum renkleri (3 temel renkten türetilmiş)
+  hover: 'rgba(229, 2, 83, 0.05)',
+  selected: 'rgba(229, 2, 83, 0.1)',
+  disabled: '#cccccc',
+
+  // Error ve Success (pembe temalı)
+  error: {
+    background: 'rgba(229, 2, 83, 0.1)',
+    text: '#e50253'
+  },
+  success: {
+    background: 'rgba(229, 2, 83, 0.1)',
+    text: '#e50253'
+  }
+}
+
 // Type definitions
 interface Character {
   id: string
@@ -566,7 +613,7 @@ export const WhispiChatInterface: FC = () => {
       style={{
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
-        background: '#f0f2f5',
+        background: colorPalette.background,
         height: '125vh',
         width: '125vw',
         overflow: 'hidden',
@@ -586,9 +633,9 @@ export const WhispiChatInterface: FC = () => {
         {/* Sidebar */}
         <div
           style={{
-            width: '360px',
-            background: 'white',
-            borderRight: '1px solid #e9edef',
+            width: '420px', // 360px'den 420px'e arttırdık (60px daha geniş)
+            background: colorPalette.background,
+            borderRight: `1px solid ${colorPalette.borderLight}`,
             display: 'flex',
             flexDirection: 'column'
           }}
@@ -597,8 +644,8 @@ export const WhispiChatInterface: FC = () => {
           <div
             style={{
               padding: '20px',
-              background: '#00a884',
-              color: 'white',
+              background: colorPalette.primary,
+              color: colorPalette.textLight,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
@@ -610,9 +657,9 @@ export const WhispiChatInterface: FC = () => {
             <button
               onClick={openCharacterModal}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
+                background: colorPalette.white, // Beyaz arkaplan
                 border: 'none',
-                color: 'white',
+                color: colorPalette.black, // Siyah yazı
                 padding: '8px 16px',
                 borderRadius: '20px',
                 cursor: 'pointer',
@@ -627,8 +674,8 @@ export const WhispiChatInterface: FC = () => {
           <div
             style={{
               padding: '15px 20px',
-              borderBottom: '1px solid #e9edef',
-              background: '#f8f9fa'
+              borderBottom: `1px solid ${colorPalette.borderLight}`,
+              background: colorPalette.background
             }}
           >
             <input
@@ -643,7 +690,7 @@ export const WhispiChatInterface: FC = () => {
               style={{
                 width: '100%',
                 padding: '10px',
-                border: '1px solid #d1d7db',
+                border: `1px solid ${colorPalette.borderMedium}`,
                 borderRadius: '8px',
                 fontSize: '14px',
                 marginBottom: '10px'
@@ -652,8 +699,8 @@ export const WhispiChatInterface: FC = () => {
             <button
               onClick={() => setShowAnonymousModal(true)}
               style={{
-                background: '#00a884',
-                color: 'white',
+                background: colorPalette.primary,
+                color: colorPalette.textLight,
                 border: 'none',
                 padding: '8px 16px',
                 borderRadius: '8px',
@@ -670,8 +717,8 @@ export const WhispiChatInterface: FC = () => {
           {error && (
             <div
               style={{
-                background: '#ffebee',
-                color: '#c62828',
+                background: colorPalette.error.background,
+                color: colorPalette.error.text,
                 padding: '15px',
                 margin: '10px 20px',
                 borderRadius: '8px',
@@ -695,7 +742,7 @@ export const WhispiChatInterface: FC = () => {
                 style={{
                   padding: '40px 20px',
                   textAlign: 'center',
-                  color: '#667781'
+                  color: colorPalette.textSecondary
                 }}
               >
                 <div
@@ -707,8 +754,12 @@ export const WhispiChatInterface: FC = () => {
                 >
                   💬
                 </div>
-                <h3>Henüz hiç sohbetiniz yok</h3>
-                <p>Yeni Chat butonuna tıklayarak başlayın</p>
+                <h3 style={{ color: colorPalette.text }}>
+                  Henüz hiç sohbetiniz yok
+                </h3>
+                <p style={{ color: colorPalette.text }}>
+                  Yeni Chat butonuna tıklayarak başlayın
+                </p>
               </div>
             ) : (
               userChats.map((chat, index) => (
@@ -719,21 +770,21 @@ export const WhispiChatInterface: FC = () => {
                     display: 'flex',
                     padding: '15px 20px',
                     cursor: 'pointer',
-                    borderBottom: '1px solid #f0f0f0',
+                    borderBottom: `1px solid ${colorPalette.borderDark}`,
                     alignItems: 'center',
                     transition: 'background-color 0.2s',
                     backgroundColor:
                       currentCharacter?.id === chat.characterId
-                        ? '#e7f3ff'
+                        ? colorPalette.selected
                         : 'transparent'
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = '#f5f6f6')
+                    (e.currentTarget.style.backgroundColor = colorPalette.hover)
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.backgroundColor =
                       currentCharacter?.id === chat.characterId
-                        ? '#e7f3ff'
+                        ? colorPalette.selected
                         : 'transparent')
                   }
                 >
@@ -746,7 +797,7 @@ export const WhispiChatInterface: FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: '#f0f0f0',
+                      background: colorPalette.borderDark,
                       fontSize: '24px'
                     }}
                   >
@@ -774,14 +825,15 @@ export const WhispiChatInterface: FC = () => {
                       style={{
                         fontWeight: 600,
                         fontSize: '16px',
-                        marginBottom: '4px'
+                        marginBottom: '4px',
+                        color: colorPalette.text // Light mode - siyah yazı
                       }}
                     >
                       {chat.characterName}
                     </div>
                     <div
                       style={{
-                        color: '#667781',
+                        color: colorPalette.textSecondary,
                         fontSize: '14px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -793,7 +845,7 @@ export const WhispiChatInterface: FC = () => {
                   </div>
                   <div
                     style={{
-                      color: '#667781',
+                      color: colorPalette.textSecondary,
                       fontSize: '12px'
                     }}
                   >
@@ -819,7 +871,7 @@ export const WhispiChatInterface: FC = () => {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            background: '#efeae2',
+            background: colorPalette.background,
             height: '125vh',
             overflow: 'hidden',
             position: 'relative'
@@ -833,13 +885,17 @@ export const WhispiChatInterface: FC = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#667781',
+                color: colorPalette.textSecondary,
                 textAlign: 'center'
               }}
             >
               <div style={{ fontSize: '60px', marginBottom: '20px' }}>💬</div>
-              <h2>Whispi Chat&apos;e Hoş Geldiniz</h2>
-              <p>Bir sohbet seçin veya yeni chat başlatın</p>
+              <h2 style={{ color: colorPalette.text }}>
+                Whispi Chat&apos;e Hoş Geldiniz
+              </h2>
+              <p style={{ color: colorPalette.text }}>
+                Bir sohbet seçin veya yeni chat başlatın
+              </p>
             </div>
           ) : (
             <div
@@ -853,9 +909,9 @@ export const WhispiChatInterface: FC = () => {
               {/* Chat Header */}
               <div
                 style={{
-                  background: 'white',
+                  background: colorPalette.background,
                   padding: '15px 20px',
-                  borderBottom: '1px solid #e9edef',
+                  borderBottom: `1px solid ${colorPalette.borderLight}`,
                   display: 'flex',
                   alignItems: 'center'
                 }}
@@ -869,7 +925,7 @@ export const WhispiChatInterface: FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: '#f0f0f0',
+                    background: colorPalette.borderDark,
                     fontSize: '20px'
                   }}
                 >
@@ -894,11 +950,21 @@ export const WhispiChatInterface: FC = () => {
                 </div>
                 <div>
                   <h3
-                    style={{ fontSize: '16px', marginBottom: '2px', margin: 0 }}
+                    style={{
+                      fontSize: '16px',
+                      marginBottom: '2px',
+                      margin: 0,
+                      color: colorPalette.text // Light mode - siyah yazı
+                    }}
                   >
                     {currentCharacter?.name}
                   </h3>
-                  <div style={{ color: '#667781', fontSize: '13px' }}>
+                  <div
+                    style={{
+                      color: colorPalette.textSecondary,
+                      fontSize: '13px'
+                    }}
+                  >
                     {currentCharacter?.statusText}
                   </div>
                 </div>
@@ -938,7 +1004,13 @@ export const WhispiChatInterface: FC = () => {
                         position: 'relative',
                         wordWrap: 'break-word',
                         background:
-                          message.role === 'user' ? '#d9fdd3' : 'white',
+                          message.role === 'user'
+                            ? colorPalette.message.user
+                            : colorPalette.message.assistant,
+                        color:
+                          message.role === 'user'
+                            ? colorPalette.textLight
+                            : colorPalette.black,
                         marginLeft: message.role === 'user' ? 'auto' : '0',
                         marginRight: message.role === 'user' ? '0' : 'auto'
                       }}
@@ -949,7 +1021,10 @@ export const WhispiChatInterface: FC = () => {
                       <div
                         style={{
                           fontSize: '11px',
-                          color: '#667781',
+                          color:
+                            message.role === 'user'
+                              ? 'rgba(255, 255, 255, 0.7)'
+                              : 'rgba(0, 0, 0, 0.7)',
                           marginTop: '2px',
                           textAlign: message.role === 'user' ? 'right' : 'left'
                         }}
@@ -966,13 +1041,18 @@ export const WhispiChatInterface: FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       padding: '10px',
-                      background: 'white',
+                      background: colorPalette.message.assistant,
                       borderRadius: '8px',
                       marginBottom: '15px',
                       maxWidth: '65%'
                     }}
                   >
-                    <div style={{ fontSize: '14px', color: '#667781' }}>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        color: colorPalette.black
+                      }}
+                    >
                       {currentCharacter?.name} yazıyor
                     </div>
                     <div
@@ -988,7 +1068,7 @@ export const WhispiChatInterface: FC = () => {
                           style={{
                             width: '6px',
                             height: '6px',
-                            background: '#667781',
+                            background: colorPalette.black,
                             borderRadius: '50%',
                             animation: `typing 1.4s infinite ease-in-out ${-0.32 + i * 0.16}s`
                           }}
@@ -1002,15 +1082,16 @@ export const WhispiChatInterface: FC = () => {
               {/* Chat Input */}
               <div
                 style={{
-                  background: 'white',
-                  padding: '15px 20px',
-                  borderTop: '1px solid #e9edef',
+                  background: colorPalette.background,
+                  padding: '12px 16px',
+                  borderTop: `1px solid ${colorPalette.borderLight}`,
                   display: 'flex',
                   alignItems: 'flex-end',
-                  gap: '10px',
+                  gap: '8px',
                   flexShrink: 0,
                   marginTop: 'auto',
-                  width: '100%'
+                  width: '100%',
+                  boxSizing: 'border-box'
                 }}
               >
                 <textarea
@@ -1018,26 +1099,37 @@ export const WhispiChatInterface: FC = () => {
                   value={messageInput}
                   onChange={(e) => {
                     setMessageInput(e.target.value)
-                    e.target.style.height = 'auto'
-                    e.target.style.height =
-                      Math.min(e.target.scrollHeight, 100) + 'px'
+                    // Reset height to auto to get the correct scrollHeight
+                    e.target.style.height = '36px'
+                    // Set new height based on content, with min and max limits
+                    const newHeight = Math.min(
+                      Math.max(e.target.scrollHeight, 36),
+                      120
+                    )
+                    e.target.style.height = newHeight + 'px'
                   }}
                   onKeyPress={handleKeyPress}
                   placeholder="Mesajınızı yazın..."
                   rows={1}
                   style={{
                     flex: 1,
-                    padding: '10px 15px',
-                    border: '1px solid #d1d7db',
-                    borderRadius: '25px',
-                    fontSize: '15px',
+                    padding: '8px 12px',
+                    border: `1px solid ${colorPalette.borderMedium}`,
+                    borderRadius: '18px',
+                    fontSize: '14px',
                     outline: 'none',
                     resize: 'none',
-                    maxHeight: '100px',
-                    minHeight: '40px',
+                    maxHeight: '120px',
+                    minHeight: '36px',
+                    height: '36px',
                     lineHeight: 1.4,
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    overflowY: 'auto',
+                    boxSizing: 'border-box',
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none' // Internet Explorer 10+
                   }}
+                  className="hide-scrollbar"
                 />
                 <button
                   onClick={sendMessage}
@@ -1045,19 +1137,23 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     background:
                       isStreaming || !messageInput.trim()
-                        ? '#d1d7db'
-                        : '#00a884',
-                    color: 'white',
+                        ? colorPalette.disabled
+                        : colorPalette.primary,
+                    color: colorPalette.textLight,
                     border: 'none',
-                    padding: '10px 20px',
-                    borderRadius: '25px',
+                    padding: '8px 16px',
+                    borderRadius: '18px',
                     cursor:
                       isStreaming || !messageInput.trim()
                         ? 'not-allowed'
                         : 'pointer',
                     fontSize: '14px',
-                    minWidth: '80px',
-                    height: '40px'
+                    minWidth: '70px',
+                    height: '36px',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   Gönder
@@ -1093,7 +1189,7 @@ export const WhispiChatInterface: FC = () => {
         >
           <div
             style={{
-              background: 'white',
+              background: colorPalette.background,
               borderRadius: '12px',
               width: '90%',
               maxWidth: '800px',
@@ -1107,8 +1203,8 @@ export const WhispiChatInterface: FC = () => {
             <div
               style={{
                 padding: '20px',
-                background: '#00a884',
-                color: 'white',
+                background: colorPalette.primary,
+                color: colorPalette.textLight,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -1126,7 +1222,7 @@ export const WhispiChatInterface: FC = () => {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'white',
+                  color: colorPalette.textLight,
                   fontSize: '24px',
                   cursor: 'pointer',
                   width: '32px',
@@ -1145,7 +1241,7 @@ export const WhispiChatInterface: FC = () => {
             <div
               style={{
                 padding: '20px',
-                borderBottom: '1px solid #e9edef'
+                borderBottom: `1px solid ${colorPalette.borderLight}`
               }}
             >
               <input
@@ -1156,7 +1252,7 @@ export const WhispiChatInterface: FC = () => {
                 style={{
                   width: '100%',
                   padding: '10px',
-                  border: '1px solid #d1d7db',
+                  border: `1px solid ${colorPalette.borderMedium}`,
                   borderRadius: '8px',
                   fontSize: '14px'
                 }}
@@ -1167,7 +1263,7 @@ export const WhispiChatInterface: FC = () => {
             <div
               style={{
                 padding: '15px 20px',
-                borderBottom: '1px solid #e9edef',
+                borderBottom: `1px solid ${colorPalette.borderLight}`,
                 maxHeight: '120px',
                 overflowY: 'auto'
               }}
@@ -1181,9 +1277,11 @@ export const WhispiChatInterface: FC = () => {
                     padding: '4px 8px',
                     margin: '2px',
                     background: activeFilters.includes(tag)
-                      ? '#00a884'
-                      : '#e9edef',
-                    color: activeFilters.includes(tag) ? 'white' : 'inherit',
+                      ? colorPalette.primary
+                      : colorPalette.borderLight,
+                    color: activeFilters.includes(tag)
+                      ? colorPalette.textLight // Pembe arkaplan üzerinde beyaz yazı
+                      : colorPalette.text, // Light mode - açık gri arkaplan üzerinde siyah yazı
                     borderRadius: '12px',
                     fontSize: '12px',
                     cursor: 'pointer',
@@ -1208,7 +1306,7 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     padding: '20px',
                     textAlign: 'center',
-                    color: '#667781'
+                    color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
                   Karakter bulunamadı
@@ -1222,12 +1320,13 @@ export const WhispiChatInterface: FC = () => {
                       display: 'flex',
                       padding: '15px 20px',
                       cursor: 'pointer',
-                      borderBottom: '1px solid #f0f0f0',
+                      borderBottom: `1px solid ${colorPalette.borderDark}`,
                       alignItems: 'center',
                       transition: 'background-color 0.2s'
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = '#f5f6f6')
+                      (e.currentTarget.style.backgroundColor =
+                        colorPalette.hover)
                     }
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.backgroundColor = 'transparent')
@@ -1242,7 +1341,7 @@ export const WhispiChatInterface: FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#f0f0f0',
+                        background: colorPalette.borderDark,
                         fontSize: '24px'
                       }}
                     >
@@ -1270,14 +1369,15 @@ export const WhispiChatInterface: FC = () => {
                         style={{
                           fontWeight: 600,
                           fontSize: '16px',
-                          marginBottom: '4px'
+                          marginBottom: '4px',
+                          color: colorPalette.text // Light mode - siyah yazı
                         }}
                       >
                         {character.name}
                       </div>
                       <div
                         style={{
-                          color: '#667781',
+                          color: colorPalette.textSecondary,
                           fontSize: '14px',
                           marginBottom: '4px'
                         }}
@@ -1297,11 +1397,11 @@ export const WhispiChatInterface: FC = () => {
                             <span
                               key={tagIndex}
                               style={{
-                                background: '#e9edef',
+                                background: colorPalette.borderLight,
                                 padding: '2px 6px',
                                 borderRadius: '8px',
                                 fontSize: '11px',
-                                color: '#667781'
+                                color: colorPalette.text // Light mode - siyah yazı
                               }}
                             >
                               {tag}
@@ -1310,11 +1410,11 @@ export const WhispiChatInterface: FC = () => {
                         {character.age && (
                           <span
                             style={{
-                              background: '#e9edef',
+                              background: colorPalette.borderLight,
                               padding: '2px 6px',
                               borderRadius: '8px',
                               fontSize: '11px',
-                              color: '#667781'
+                              color: colorPalette.text // Light mode - siyah yazı
                             }}
                           >
                             {character.age} yaş
@@ -1356,7 +1456,7 @@ export const WhispiChatInterface: FC = () => {
         >
           <div
             style={{
-              background: 'white',
+              background: colorPalette.background,
               borderRadius: '12px',
               width: '90%',
               maxWidth: '500px',
@@ -1370,8 +1470,8 @@ export const WhispiChatInterface: FC = () => {
             <div
               style={{
                 padding: '20px',
-                background: '#00a884',
-                color: 'white',
+                background: colorPalette.primary,
+                color: colorPalette.textLight,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -1390,7 +1490,7 @@ export const WhispiChatInterface: FC = () => {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'white',
+                  color: colorPalette.textLight,
                   fontSize: '24px',
                   cursor: 'pointer',
                   width: '32px',
@@ -1412,7 +1512,8 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     display: 'block',
                     marginBottom: '5px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
                   Ad:
@@ -1425,7 +1526,7 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     width: '100%',
                     padding: '10px',
-                    border: '1px solid #d1d7db',
+                    border: `1px solid ${colorPalette.borderMedium}`,
                     borderRadius: '8px',
                     fontSize: '14px',
                     marginBottom: '15px'
@@ -1436,7 +1537,8 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     display: 'block',
                     marginBottom: '5px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
                   Doğum Yılı:
@@ -1451,7 +1553,7 @@ export const WhispiChatInterface: FC = () => {
                   style={{
                     width: '100%',
                     padding: '10px',
-                    border: '1px solid #d1d7db',
+                    border: `1px solid ${colorPalette.borderMedium}`,
                     borderRadius: '8px',
                     fontSize: '14px'
                   }}
@@ -1465,8 +1567,10 @@ export const WhispiChatInterface: FC = () => {
                 onClick={createAnonymousAccount}
                 disabled={isCreatingAccount}
                 style={{
-                  background: isCreatingAccount ? '#d1d7db' : '#00a884',
-                  color: 'white',
+                  background: isCreatingAccount
+                    ? colorPalette.disabled
+                    : colorPalette.primary,
+                  color: colorPalette.textLight,
                   border: 'none',
                   padding: '10px 20px',
                   borderRadius: '25px',
@@ -1485,10 +1589,10 @@ export const WhispiChatInterface: FC = () => {
                     marginTop: '15px',
                     fontSize: '14px',
                     color: accountCreationStatus.includes('hata')
-                      ? '#c62828'
+                      ? colorPalette.error.text
                       : accountCreationStatus.includes('başarıyla')
-                        ? '#00a884'
-                        : '#667781'
+                        ? colorPalette.primary
+                        : colorPalette.textSecondary
                   }}
                 >
                   {accountCreationStatus}
@@ -1511,6 +1615,15 @@ export const WhispiChatInterface: FC = () => {
             transform: scale(1);
             opacity: 1;
           }
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+          background: transparent;
         }
       `}</style>
     </div>
