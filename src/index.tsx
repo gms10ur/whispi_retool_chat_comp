@@ -693,7 +693,8 @@ export const WhispiChatInterface: FC = () => {
                 border: `1px solid ${colorPalette.borderMedium}`,
                 borderRadius: '8px',
                 fontSize: '14px',
-                marginBottom: '10px'
+                marginBottom: '10px',
+                boxSizing: 'border-box'
               }}
             />
             <button
