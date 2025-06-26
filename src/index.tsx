@@ -108,6 +108,8 @@ export const WhispiChatInterface: FC = () => {
   const [showChatInterface, setShowChatInterface] = useState(false)
   const [typingIndicator, setTypingIndicator] = useState(false)
   const [error, setError] = useState('')
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState(false)
+  const [isSelectingCharacter, setIsSelectingCharacter] = useState(false)
 
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
@@ -318,6 +320,7 @@ export const WhispiChatInterface: FC = () => {
   }
 
   const loadCharactersForModal = async () => {
+    setIsLoadingCharacters(true)
     try {
       const response = await fetch(`${apiBaseUrl}/listCharacters`, {
         method: 'POST',
@@ -344,6 +347,8 @@ export const WhispiChatInterface: FC = () => {
         'Karakterler yüklenirken hata oluştu: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
+    } finally {
+      setIsLoadingCharacters(false)
     }
   }
 
@@ -382,6 +387,7 @@ export const WhispiChatInterface: FC = () => {
   }
 
   const selectCharacter = async (character: Character) => {
+    setIsSelectingCharacter(true)
     try {
       const response = await fetch(`${apiBaseUrl}/newChat`, {
         method: 'POST',
@@ -418,6 +424,8 @@ export const WhispiChatInterface: FC = () => {
         'Karakter seçilirken hata oluştu: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
+    } finally {
+      setIsSelectingCharacter(false)
     }
   }
 
@@ -1041,26 +1049,18 @@ export const WhispiChatInterface: FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '10px',
+                      padding: '8px 12px',
                       background: colorPalette.message.assistant,
                       borderRadius: '8px',
                       marginBottom: '15px',
-                      maxWidth: '65%'
+                      maxWidth: '120px',
+                      gap: '8px'
                     }}
                   >
                     <div
                       style={{
-                        fontSize: '14px',
-                        color: colorPalette.black
-                      }}
-                    >
-                      {currentCharacter?.name} yazıyor
-                    </div>
-                    <div
-                      style={{
                         display: 'flex',
-                        gap: '4px',
-                        marginLeft: '10px'
+                        gap: '3px'
                       }}
                     >
                       {[0, 1, 2].map((i) => (
@@ -1299,9 +1299,61 @@ export const WhispiChatInterface: FC = () => {
               style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: 0
+                padding: 0,
+                position: 'relative'
               }}
             >
+              {/* Loading Overlay for Character Modal */}
+              {(isLoadingCharacters || isSelectingCharacter) && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    backdropFilter: 'blur(2px)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}
+                  >
+                    {/* Spinning Circle */}
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        border: `3px solid ${colorPalette.borderLight}`,
+                        borderTop: `3px solid ${colorPalette.primary}`,
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                    <div
+                      style={{
+                        color: colorPalette.text,
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      {isLoadingCharacters
+                        ? 'Karakterler yükleniyor...'
+                        : 'Karakter seçiliyor...'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {filteredCharacters.length === 0 ? (
                 <div
                   style={{
@@ -1507,7 +1559,57 @@ export const WhispiChatInterface: FC = () => {
             </div>
 
             {/* Form */}
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '20px', position: 'relative' }}>
+              {/* Loading Overlay for Account Creation */}
+              {isCreatingAccount && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    backdropFilter: 'blur(2px)',
+                    borderRadius: '0 0 12px 12px'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}
+                  >
+                    {/* Spinning Circle */}
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        border: `3px solid ${colorPalette.borderLight}`,
+                        borderTop: `3px solid ${colorPalette.primary}`,
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                    <div
+                      style={{
+                        color: colorPalette.text,
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      Hesap oluşturuluyor...
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ padding: '10px 0' }}>
                 <label
                   style={{
@@ -1616,6 +1718,11 @@ export const WhispiChatInterface: FC = () => {
             transform: scale(1);
             opacity: 1;
           }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         
         .hide-scrollbar::-webkit-scrollbar {
