@@ -110,6 +110,13 @@ export const WhispiChatInterface: FC = () => {
   const [error, setError] = useState('')
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false)
   const [isSelectingCharacter, setIsSelectingCharacter] = useState(false)
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<{
+    characterId: string
+    characterName: string
+  } | null>(null)
+  const [isLoadingChats, setIsLoadingChats] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
@@ -204,11 +211,12 @@ export const WhispiChatInterface: FC = () => {
   const loadUserChats = async (uid: string) => {
     if (!uid) {
       setError(
-        "Varsa sahip olduğunuz UID'yi giriniz. UID'niz yoksa yeni hesap açabilirsiniz."
+        'Please enter your UID if you have one, or create a new anonymous account.'
       )
       return
     }
 
+    setIsLoadingChats(true)
     try {
       const response = await fetch(`${apiBaseUrl}/getUserChats`, {
         method: 'POST',
@@ -232,25 +240,27 @@ export const WhispiChatInterface: FC = () => {
       ) {
         setUserChats([])
       } else {
-        setError('Sohbetler yüklenirken hata oluştu: ' + errorMessage)
+        setError('Error loading chats: ' + errorMessage)
       }
+    } finally {
+      setIsLoadingChats(false)
     }
   }
 
   const createAnonymousAccount = async () => {
     if (!displayName.trim()) {
-      setAccountCreationStatus('Lütfen adınızı girin.')
+      setAccountCreationStatus('Please enter your name.')
       return
     }
 
     const birthYearNum = parseInt(birthYear)
     if (!birthYearNum || birthYearNum < 1900 || birthYearNum > 2025) {
-      setAccountCreationStatus('Lütfen geçerli bir doğum yılı girin.')
+      setAccountCreationStatus('Please enter a valid birth year.')
       return
     }
 
     setIsCreatingAccount(true)
-    setAccountCreationStatus('Anonim hesap oluşturuluyor...')
+    setAccountCreationStatus('Creating anonymous account...')
 
     try {
       // Create anonymous user
@@ -273,7 +283,7 @@ export const WhispiChatInterface: FC = () => {
       const uid = createUserResult.result.uid
 
       // Onboard user
-      setAccountCreationStatus('Hesap ayarları yapılıyor...')
+      setAccountCreationStatus('Setting up account...')
       const deviceId = generateDeviceId()
 
       const onboardResponse = await fetch(`${apiBaseUrl}/onboardUser`, {
@@ -301,7 +311,7 @@ export const WhispiChatInterface: FC = () => {
       setUidInput(uid)
       handleSetCurrentUID(uid)
 
-      setAccountCreationStatus('Hesap başarıyla oluşturuldu!')
+      setAccountCreationStatus('Account created successfully!')
       setTimeout(() => {
         setShowAnonymousModal(false)
         setDisplayName('')
@@ -311,7 +321,7 @@ export const WhispiChatInterface: FC = () => {
     } catch (error: unknown) {
       console.error('Error creating anonymous account:', error)
       setAccountCreationStatus(
-        'Hesap oluşturulurken hata oluştu: ' +
+        'Error creating account: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
     } finally {
@@ -344,7 +354,7 @@ export const WhispiChatInterface: FC = () => {
     } catch (error: unknown) {
       console.error('Error loading characters:', error)
       setError(
-        'Karakterler yüklenirken hata oluştu: ' +
+        'Error loading characters: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
     } finally {
@@ -421,7 +431,7 @@ export const WhispiChatInterface: FC = () => {
     } catch (error: unknown) {
       console.error('Error selecting character:', error)
       setError(
-        'Karakter seçilirken hata oluştu: ' +
+        'Error selecting character: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
     } finally {
@@ -434,7 +444,7 @@ export const WhispiChatInterface: FC = () => {
       id: chat.characterId,
       name: chat.characterName,
       profilePicture: chat.characterAvatar,
-      statusText: 'Çevrimiçi'
+      statusText: 'Online'
     })
     setCurrentConversationId(chat.conversationId)
     await loadChatHistory(chat.characterId)
@@ -444,6 +454,7 @@ export const WhispiChatInterface: FC = () => {
   const loadChatHistory = async (characterId: string) => {
     if (!currentUID || !characterId) return
 
+    setIsLoadingHistory(true)
     try {
       const response = await fetch(`${apiBaseUrl}/getChatHistory`, {
         method: 'POST',
@@ -478,6 +489,8 @@ export const WhispiChatInterface: FC = () => {
       )
     } catch (error: unknown) {
       console.error('Error loading chat history:', error)
+    } finally {
+      setIsLoadingHistory(false)
     }
   }
 
@@ -584,7 +597,7 @@ export const WhispiChatInterface: FC = () => {
     } catch (error: unknown) {
       console.error('Error sending message:', error)
       setError(
-        'Mesaj gönderilirken hata oluştu: ' +
+        'Error sending message: ' +
           (error instanceof Error ? error.message : 'Unknown error')
       )
     } finally {
@@ -609,11 +622,66 @@ export const WhispiChatInterface: FC = () => {
 
   const openCharacterModal = () => {
     if (!currentUID) {
-      setError('Lütfen önce UID giriniz veya anonim hesap oluşturunuz.')
+      setError('Please enter your UID first or create an anonymous account.')
       return
     }
     setShowCharacterModal(true)
     loadCharactersForModal()
+  }
+
+  const deleteChat = async (characterId: string) => {
+    if (!currentUID) return
+
+    setDeletingChatId(characterId)
+    try {
+      const response = await fetch(`${apiBaseUrl}/deleteChat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            characterId,
+            uid: currentUID
+          }
+        })
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error?.message || 'Failed to delete chat')
+      }
+
+      // Remove from user chats
+      setUserChats((prev) =>
+        prev.filter((chat) => chat.characterId !== characterId)
+      )
+
+      // If this was the current chat, close it
+      if (currentCharacter?.id === characterId) {
+        setCurrentCharacter(null)
+        setCurrentConversationId(null)
+        setMessages([])
+        setShowChatInterface(false)
+      }
+
+      setShowDeleteConfirmation(null)
+    } catch (error: unknown) {
+      console.error('Error deleting chat:', error)
+      setError(
+        'Error deleting chat: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setDeletingChatId(null)
+    }
+  }
+
+  const handleDeleteClick = (
+    e: React.MouseEvent,
+    characterId: string,
+    characterName: string
+  ) => {
+    e.stopPropagation() // Prevent opening the chat
+    setShowDeleteConfirmation({ characterId, characterName })
   }
 
   return (
@@ -674,7 +742,7 @@ export const WhispiChatInterface: FC = () => {
                 fontSize: '14px'
               }}
             >
-              Yeni Chat
+              New Chat
             </button>
           </div>
 
@@ -694,7 +762,7 @@ export const WhispiChatInterface: FC = () => {
                 e.target.value.trim() &&
                 handleSetCurrentUID(e.target.value.trim())
               }
-              placeholder="Sahip olduğunuz UID'yi girin veya yeni hesap açın."
+              placeholder="Enter your UID or create a new account"
               style={{
                 width: '100%',
                 padding: '10px',
@@ -718,7 +786,7 @@ export const WhispiChatInterface: FC = () => {
                 width: '100%'
               }}
             >
-              Anonim Hesap Oluştur
+              Create Anonymous Account
             </button>
           </div>
 
@@ -743,9 +811,58 @@ export const WhispiChatInterface: FC = () => {
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: 0
+              padding: 0,
+              position: 'relative'
             }}
           >
+            {/* Loading Overlay for Chat List */}
+            {isLoadingChats && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                  backdropFilter: 'blur(2px)'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                >
+                  {/* Spinning Circle */}
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      border: `3px solid ${colorPalette.borderLight}`,
+                      borderTop: `3px solid ${colorPalette.primary}`,
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  />
+                  <div
+                    style={{
+                      color: colorPalette.text,
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                  >
+                    Loading chats...
+                  </div>
+                </div>
+              </div>
+            )}
             {userChats.length === 0 ? (
               <div
                 style={{
@@ -763,11 +880,9 @@ export const WhispiChatInterface: FC = () => {
                 >
                   💬
                 </div>
-                <h3 style={{ color: colorPalette.text }}>
-                  Henüz hiç sohbetiniz yok
-                </h3>
+                <h3 style={{ color: colorPalette.text }}>No chats yet</h3>
                 <p style={{ color: colorPalette.text }}>
-                  Yeni Chat butonuna tıklayarak başlayın
+                  Click New Chat to get started
                 </p>
               </div>
             ) : (
@@ -785,7 +900,8 @@ export const WhispiChatInterface: FC = () => {
                     backgroundColor:
                       currentCharacter?.id === chat.characterId
                         ? colorPalette.selected
-                        : 'transparent'
+                        : 'transparent',
+                    position: 'relative'
                   }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.backgroundColor = colorPalette.hover)
@@ -849,24 +965,88 @@ export const WhispiChatInterface: FC = () => {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      {chat.lastMessage || 'Yeni sohbet'}
+                      {chat.lastMessage || 'New conversation'}
                     </div>
                   </div>
                   <div
                     style={{
-                      color: colorPalette.textSecondary,
-                      fontSize: '12px'
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
-                    {chat.lastMessageTime
-                      ? new Date(chat.lastMessageTime).toLocaleTimeString(
-                          'tr-TR',
-                          {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }
+                    <div
+                      style={{
+                        color: colorPalette.textSecondary,
+                        fontSize: '12px'
+                      }}
+                    >
+                      {chat.lastMessageTime
+                        ? new Date(chat.lastMessageTime).toLocaleTimeString(
+                            'tr-TR',
+                            {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }
+                          )
+                        : ''}
+                    </div>
+                    <button
+                      onClick={(e) =>
+                        handleDeleteClick(
+                          e,
+                          chat.characterId,
+                          chat.characterName
                         )
-                      : ''}
+                      }
+                      disabled={deletingChatId === chat.characterId}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor:
+                          deletingChatId === chat.characterId
+                            ? 'not-allowed'
+                            : 'pointer',
+                        color: colorPalette.textSecondary,
+                        fontSize: '16px',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        opacity: deletingChatId === chat.characterId ? 0.5 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (deletingChatId !== chat.characterId) {
+                          e.currentTarget.style.backgroundColor =
+                            colorPalette.error.background
+                          e.currentTarget.style.color = colorPalette.error.text
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (deletingChatId !== chat.characterId) {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                          e.currentTarget.style.color =
+                            colorPalette.textSecondary
+                        }
+                      }}
+                    >
+                      {deletingChatId === chat.characterId ? (
+                        <div
+                          style={{
+                            width: '14px',
+                            height: '14px',
+                            border: `2px solid ${colorPalette.borderLight}`,
+                            borderTop: `2px solid ${colorPalette.primary}`,
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }}
+                        />
+                      ) : (
+                        '🗑️'
+                      )}
+                    </button>
                   </div>
                 </div>
               ))
@@ -900,10 +1080,10 @@ export const WhispiChatInterface: FC = () => {
             >
               <div style={{ fontSize: '60px', marginBottom: '20px' }}>💬</div>
               <h2 style={{ color: colorPalette.text }}>
-                Whispi Chat&apos;e Hoş Geldiniz
+                Welcome to Whispi Chat
               </h2>
               <p style={{ color: colorPalette.text }}>
-                Bir sohbet seçin veya yeni chat başlatın
+                Select a chat or start a new conversation
               </p>
             </div>
           ) : (
@@ -974,7 +1154,11 @@ export const WhispiChatInterface: FC = () => {
                       fontSize: '13px'
                     }}
                   >
-                    {currentCharacter?.statusText}
+                    {typingIndicator ? (
+                      <span style={{ fontStyle: 'italic' }}>Typing...</span>
+                    ) : (
+                      currentCharacter?.statusText
+                    )}
                   </div>
                 </div>
               </div>
@@ -991,9 +1175,58 @@ export const WhispiChatInterface: FC = () => {
                     'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23e9edef" opacity="0.5"/></pattern></defs><rect x="0" y="0" width="100" height="100" fill="url(%23pattern)"/></svg>\')',
                   minHeight: 0,
                   display: 'flex',
-                  flexDirection: 'column'
+                  flexDirection: 'column',
+                  position: 'relative'
                 }}
               >
+                {/* Loading Overlay for Chat History */}
+                {isLoadingHistory && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                      backdropFilter: 'blur(2px)'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}
+                    >
+                      {/* Spinning Circle */}
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          border: `3px solid ${colorPalette.borderLight}`,
+                          borderTop: `3px solid ${colorPalette.primary}`,
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }}
+                      />
+                      <div
+                        style={{
+                          color: colorPalette.text,
+                          fontSize: '14px',
+                          fontWeight: 500
+                        }}
+                      >
+                        Loading chat history...
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {messages.map((message, index) => (
                   <div
                     key={index}
@@ -1049,32 +1282,39 @@ export const WhispiChatInterface: FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '8px 12px',
-                      background: colorPalette.message.assistant,
-                      borderRadius: '8px',
-                      marginBottom: '15px',
-                      maxWidth: '120px',
-                      gap: '8px'
+                      justifyContent: 'flex-start',
+                      marginBottom: '15px'
                     }}
                   >
                     <div
                       style={{
                         display: 'flex',
-                        gap: '3px'
+                        alignItems: 'center',
+                        padding: '8px',
+                        background: colorPalette.message.assistant,
+                        borderRadius: '8px',
+                        width: 'fit-content'
                       }}
                     >
-                      {[0, 1, 2].map((i) => (
-                        <div
-                          key={i}
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            background: colorPalette.black,
-                            borderRadius: '50%',
-                            animation: `typing 1.4s infinite ease-in-out ${-0.32 + i * 0.16}s`
-                          }}
-                        />
-                      ))}
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '3px'
+                        }}
+                      >
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              background: colorPalette.black,
+                              borderRadius: '50%',
+                              animation: `typing 1.4s infinite ease-in-out ${-0.32 + i * 0.16}s`
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1110,7 +1350,7 @@ export const WhispiChatInterface: FC = () => {
                     e.target.style.height = newHeight + 'px'
                   }}
                   onKeyPress={handleKeyPress}
-                  placeholder="Mesajınızı yazın..."
+                  placeholder="Type your message..."
                   rows={1}
                   style={{
                     flex: 1,
@@ -1157,7 +1397,7 @@ export const WhispiChatInterface: FC = () => {
                     justifyContent: 'center'
                   }}
                 >
-                  Gönder
+                  Send
                 </button>
               </div>
             </div>
@@ -1212,7 +1452,7 @@ export const WhispiChatInterface: FC = () => {
               }}
             >
               <h3 style={{ fontSize: '18px', fontWeight: 500, margin: 0 }}>
-                Karakter Seçin
+                Select Character
               </h3>
               <button
                 onClick={() => {
@@ -1249,13 +1489,14 @@ export const WhispiChatInterface: FC = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Karakter ara..."
+                placeholder="Search characters..."
                 style={{
                   width: '100%',
                   padding: '10px',
                   border: `1px solid ${colorPalette.borderMedium}`,
                   borderRadius: '8px',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -1347,8 +1588,8 @@ export const WhispiChatInterface: FC = () => {
                       }}
                     >
                       {isLoadingCharacters
-                        ? 'Karakterler yükleniyor...'
-                        : 'Karakter seçiliyor...'}
+                        ? 'Loading characters...'
+                        : 'Selecting character...'}
                     </div>
                   </div>
                 </div>
@@ -1362,7 +1603,7 @@ export const WhispiChatInterface: FC = () => {
                     color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
-                  Karakter bulunamadı
+                  No characters found
                 </div>
               ) : (
                 filteredCharacters.map((character, index) => (
@@ -1531,7 +1772,7 @@ export const WhispiChatInterface: FC = () => {
               }}
             >
               <h3 style={{ fontSize: '18px', fontWeight: 500, margin: 0 }}>
-                Anonim Hesap Oluştur
+                Create Anonymous Account
               </h3>
               <button
                 onClick={() => {
@@ -1604,7 +1845,7 @@ export const WhispiChatInterface: FC = () => {
                         fontWeight: 500
                       }}
                     >
-                      Hesap oluşturuluyor...
+                      Creating account...
                     </div>
                   </div>
                 </div>
@@ -1619,20 +1860,21 @@ export const WhispiChatInterface: FC = () => {
                     color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
-                  Ad:
+                  Name:
                 </label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Adınızı girin..."
+                  placeholder="Enter your name..."
                   style={{
                     width: '100%',
                     padding: '10px',
                     border: `1px solid ${colorPalette.borderMedium}`,
                     borderRadius: '8px',
                     fontSize: '14px',
-                    marginBottom: '15px'
+                    marginBottom: '15px',
+                    boxSizing: 'border-box'
                   }}
                 />
 
@@ -1644,13 +1886,13 @@ export const WhispiChatInterface: FC = () => {
                     color: colorPalette.text // Light mode - siyah yazı
                   }}
                 >
-                  Doğum Yılı:
+                  Birth Year:
                 </label>
                 <input
                   type="number"
                   value={birthYear}
                   onChange={(e) => setBirthYear(e.target.value)}
-                  placeholder="Doğum yılınızı girin..."
+                  placeholder="Enter your birth year..."
                   min="1900"
                   max="2025"
                   style={{
@@ -1658,7 +1900,8 @@ export const WhispiChatInterface: FC = () => {
                     padding: '10px',
                     border: `1px solid ${colorPalette.borderMedium}`,
                     borderRadius: '8px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -1684,16 +1927,16 @@ export const WhispiChatInterface: FC = () => {
                   display: 'block'
                 }}
               >
-                {isCreatingAccount ? 'Hesap Oluşturuluyor...' : 'Hesap Oluştur'}
+                {isCreatingAccount ? 'Creating Account...' : 'Create Account'}
               </button>
               {accountCreationStatus && (
                 <div
                   style={{
                     marginTop: '15px',
                     fontSize: '14px',
-                    color: accountCreationStatus.includes('hata')
+                    color: accountCreationStatus.includes('error')
                       ? colorPalette.error.text
-                      : accountCreationStatus.includes('başarıyla')
+                      : accountCreationStatus.includes('successfully')
                         ? colorPalette.primary
                         : colorPalette.textSecondary
                   }}
@@ -1701,6 +1944,120 @@ export const WhispiChatInterface: FC = () => {
                   {accountCreationStatus}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteConfirmation(null)
+            }
+          }}
+        >
+          <div
+            style={{
+              background: colorPalette.background,
+              borderRadius: '12px',
+              width: '90%',
+              maxWidth: '400px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '15px',
+              position: 'relative'
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowDeleteConfirmation(null)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'none',
+                border: 'none',
+                color: colorPalette.text,
+                fontSize: '18px',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+
+            <h3
+              style={{
+                fontSize: '16px',
+                fontWeight: 500,
+                margin: 0,
+                color: colorPalette.text
+              }}
+            >
+              Delete Chat
+            </h3>
+            <p
+              style={{
+                color: colorPalette.textSecondary,
+                fontSize: '14px',
+                margin: 0
+              }}
+            >
+              Are you sure you want to delete your chat with{' '}
+              {showDeleteConfirmation.characterName}?
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '10px'
+              }}
+            >
+              <button
+                onClick={() => deleteChat(showDeleteConfirmation.characterId)}
+                style={{
+                  background: colorPalette.primary,
+                  color: colorPalette.textLight,
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  flex: 1
+                }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirmation(null)}
+                style={{
+                  background: colorPalette.borderLight,
+                  color: colorPalette.text,
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  flex: 1
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

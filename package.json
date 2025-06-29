@@ -36,9 +36,9 @@
     "postcss-modules": "^6.0.0"
   },
   "retoolCustomComponentLibraryConfig": {
-    "name": "WhispiChat",
-    "label": "whispiChat",
-    "description": "testChat",
+    "name": "WhispiChatComponent",
+    "label": "WhispiChatComponent",
+    "description": "",
     "entryPoint": "src/index.tsx",
     "outputPath": "dist"
   }
