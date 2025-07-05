@@ -73,6 +73,7 @@ interface UserChat {
   conversationId: string
   lastMessage?: string
   lastMessageTime?: string
+  lastSeen?: number // Unix timestamp
 }
 
 export const WhispiChatInterface: FC = () => {
@@ -87,6 +88,9 @@ export const WhispiChatInterface: FC = () => {
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(
     null
   )
+  const [currentCharacterLastSeen, setCurrentCharacterLastSeen] = useState<
+    number | null
+  >(null)
   const [_currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(null)
@@ -417,6 +421,7 @@ export const WhispiChatInterface: FC = () => {
 
       const chatData = result.result
       setCurrentCharacter(character)
+      setCurrentCharacterLastSeen(null) // New character, no last seen data
       setCurrentConversationId(chatData.conversationId)
       setShowCharacterModal(false)
 
@@ -446,6 +451,7 @@ export const WhispiChatInterface: FC = () => {
       profilePicture: chat.characterAvatar,
       statusText: 'Online'
     })
+    setCurrentCharacterLastSeen(chat.lastSeen || null)
     setCurrentConversationId(chat.conversationId)
     await loadChatHistory(chat.characterId)
     setShowChatInterface(true)
@@ -618,6 +624,39 @@ export const WhispiChatInterface: FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const getLastSeenText = (lastSeen?: number | null) => {
+    if (!lastSeen) return 'Online'
+
+    const now = Date.now()
+    const diffInMs = now - lastSeen
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+
+    // Son 1 dakika içerisindeyse Online
+    if (diffInMinutes < 1) {
+      return 'Online'
+    }
+
+    // 1-59 dakika arası
+    if (diffInMinutes < 60) {
+      return `Last seen ${diffInMinutes}m ago`
+    }
+
+    // 1-23 saat arası
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) {
+      return `Last seen ${diffInHours}h ago`
+    }
+
+    // 1-30 gün arası
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 30) {
+      return `Last seen ${diffInDays}d ago`
+    }
+
+    // 30 günden fazla
+    return 'Last seen long ago'
   }
 
   const openCharacterModal = () => {
@@ -1157,7 +1196,7 @@ export const WhispiChatInterface: FC = () => {
                     {typingIndicator ? (
                       <span style={{ fontStyle: 'italic' }}>Typing...</span>
                     ) : (
-                      currentCharacter?.statusText
+                      getLastSeenText(currentCharacterLastSeen)
                     )}
                   </div>
                 </div>
