@@ -341,9 +341,9 @@ export const WhispiChatInterface: FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: {
+            uid: currentUID,
             limit: 20,
-            filteredTags: [],
-            prefetchMode: false
+            filteredTags: []
           }
         })
       })
